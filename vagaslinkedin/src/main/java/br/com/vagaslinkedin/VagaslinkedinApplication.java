@@ -26,6 +26,8 @@ public class VagaslinkedinApplication {
 
 			efetuarLoginGoogle(page);
 
+			aguardarEmSegundos(3);
+
 			visualizarVagasLinkedin(page);
 
 			aguardarEmSegundos(60);
