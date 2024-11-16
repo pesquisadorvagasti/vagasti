@@ -26,9 +26,7 @@ public class VagaslinkedinApplication {
 
 			efetuarLoginGoogle(page);
 
-			aguardarEmSegundos(5);
-
-			abrirPaginaVagasLinkedin(page);
+			aguardarEmSegundos(3);
 
 			visualizarVagasLinkedin(page);
 
@@ -68,13 +66,28 @@ public class VagaslinkedinApplication {
 		page.waitForURL("https://myaccount.google.com/*");
 	}
 
-	private static void abrirPaginaVagasLinkedin(Page page) {
+	private static Page abrirPaginaVagasLinkedin(Page page) {
+
 		page.navigate("https://www.linkedin.com/jobs");
 
 		page.waitForSelector("body");
-		aguardarEmSegundos(30);
-		page.navigate(
-				"https://www.linkedin.com/jobs/search/?distance=100&f_WT=2&&keywords=Java&origin=JOB_SEARCH_PAGE_JOB_FILTER&refresh=true&spellCorrectionEnabled=true");
+		aguardarEmSegundos(20);
+
+		return page;
+	}
+
+	private static Page abrirPaginaVagasLinkedinComParametros(Page page, Integer quantidadeItensMostrarPagina) {
+
+		page.waitForSelector("body");
+
+		String urlPaginaVagasLinkedin = "https://www.linkedin.com/jobs/search/?distance=100&f_WT=2&&keywords=Java&origin=JOB_SEARCH_PAGE_JOB_FILTER&refresh=true&spellCorrectionEnabled=true";
+
+		if (Objects.nonNull(quantidadeItensMostrarPagina)) {
+			urlPaginaVagasLinkedin = urlPaginaVagasLinkedin + "&start=" + quantidadeItensMostrarPagina;
+		}
+
+		page.navigate(urlPaginaVagasLinkedin);
+		return page;
 	}
 
 	private static Page abrirBrowserMaximizado(Playwright playwright) {
@@ -99,46 +112,65 @@ public class VagaslinkedinApplication {
 
 	public static void visualizarVagasLinkedin(Page page) {
 
-		ElementHandle primeiraVaga = page.querySelector("[data-job-id]");
-		primeiraVaga.waitForSelector("img").click();
-		aguardarEmSegundos(1);
+		Page paginaVagasLinkedin = abrirPaginaVagasLinkedinComParametros(page, null);
+		aguardarEmSegundos(20);
+		int quantidadeVagasDisponiveis = obterQuantidadeVagasDisponiveis(paginaVagasLinkedin);
+		int quantidadePaginasPossiveis = obterQuantidadePaginasPossiveis(quantidadeVagasDisponiveis);
 
-		rolarParaFinalPagina(page);
-		List<ElementHandle> vagas = page.querySelectorAll("[data-job-id]");
+		int quantidadeItensMostrarPagina = -25;
 
-		for (ElementHandle vaga : vagas) {
+		for (int i = 0; i < quantidadePaginasPossiveis; i++) {
+			quantidadeItensMostrarPagina += 25;
 
-			try {
-				vaga.waitForSelector("img").click();
-
-				aguardarEmSegundos(2);
-				page.waitForSelector(
-						".disabled.ember-view.job-card-container__link.job-card-list__title.job-card-list__title--link strong");
-
-				String idVaga = obterIdVaga(page.url());
-
-				String tituloVaga = vaga.querySelector(
-						".disabled.ember-view.job-card-container__link.job-card-list__title.job-card-list__title--link strong")
-						.textContent();
-
-				String empresa = vaga.querySelector(".job-card-container__primary-description").textContent()
-						.replace("\n                  ", "").replace("\n", "");
-
-				page.waitForSelector("#job-details");
-				String descricaoVaga = page.querySelector("#job-details").innerHTML();
-
-				System.out.println("Quantidade de vagas disponíveis: " + obterQuantidadeVagasDisponiveis(page));
-				System.out.println("Id da vaga: " + idVaga);
-				System.out.println("Título: " + tituloVaga);
-				System.out.println("Empresa: " + empresa);
-				// System.out.println("Descrição: " + descricaoVaga);
-				System.out.println("-------------------------");
-
-			} catch (Exception e) {
-
-				System.err.println("Erro ao processar vaga: " + e.getMessage());
+			if (quantidadeItensMostrarPagina > 0) {
+				page = abrirPaginaVagasLinkedinComParametros(paginaVagasLinkedin, quantidadeItensMostrarPagina);
 			}
+
+			ElementHandle primeiraVaga = paginaVagasLinkedin.querySelector("[data-job-id]");
+			primeiraVaga.click();
+			aguardarEmSegundos(1);
+
+			rolarParaFinalPagina(page);
+			List<ElementHandle> vagas = paginaVagasLinkedin.querySelectorAll("[data-job-id]");
+
+			for (ElementHandle vaga : vagas) {
+
+				try {
+					clicarEmVagaPorVagaParaObterInformacoes(paginaVagasLinkedin, vaga);
+
+				} catch (Exception e) {
+
+					System.err.println("Erro ao processar vaga: " + e.getMessage());
+				}
+			}
+
 		}
+	}
+
+	private static void clicarEmVagaPorVagaParaObterInformacoes(Page page, ElementHandle vaga) {
+		vaga.click();
+
+		aguardarEmSegundos(2);
+		page.waitForSelector(
+				".disabled.ember-view.job-card-container__link.job-card-list__title.job-card-list__title--link strong");
+
+		String idVaga = obterIdVaga(page.url());
+
+		String tituloVaga = vaga.querySelector(
+				".disabled.ember-view.job-card-container__link.job-card-list__title.job-card-list__title--link strong")
+				.textContent();
+
+		String empresa = vaga.querySelector(".job-card-container__primary-description").textContent()
+				.replace("\n                  ", "").replace("\n", "");
+
+		page.waitForSelector("#job-details");
+		// String descricaoVaga = page.querySelector("#job-details").innerHTML();
+
+		System.out.println("Id da vaga: " + idVaga);
+		System.out.println("Título: " + tituloVaga);
+		System.out.println("Empresa: " + empresa);
+		// System.out.println("Descrição: " + descricaoVaga);
+		System.out.println("-------------------------");
 	}
 
 	public static void rodarRodinhaMouseParaBaixo(Page page) {
@@ -180,5 +212,11 @@ public class VagaslinkedinApplication {
 		}
 
 		return 0;
+	}
+
+	public static int obterQuantidadePaginasPossiveis(int quantidadeVagasDisponiveis) {
+
+		int quantidadePaginasDisponiveis = quantidadeVagasDisponiveis / 25;
+		return quantidadePaginasDisponiveis - 25;
 	}
 }
