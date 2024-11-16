@@ -113,11 +113,12 @@ public class VagaslinkedinApplication {
 	public static void visualizarVagasLinkedin(Page page) {
 
 		Page paginaVagasLinkedin = abrirPaginaVagasLinkedinComParametros(page, null);
-		aguardarEmSegundos(20);
+		aguardarEmSegundos(30);
 		int quantidadeVagasDisponiveis = obterQuantidadeVagasDisponiveis(paginaVagasLinkedin);
 		int quantidadePaginasPossiveis = obterQuantidadePaginasPossiveis(quantidadeVagasDisponiveis);
 
 		int quantidadeItensMostrarPagina = -25;
+		int quantidadeVagasCapturadas = 0;
 
 		for (int i = 0; i < quantidadePaginasPossiveis; i++) {
 			quantidadeItensMostrarPagina += 25;
@@ -137,7 +138,8 @@ public class VagaslinkedinApplication {
 
 				try {
 					clicarEmVagaPorVagaParaObterInformacoes(paginaVagasLinkedin, vaga);
-
+					quantidadeVagasCapturadas++;
+					System.out.println("Capturadas " + quantidadeVagasCapturadas + " vagas");
 				} catch (Exception e) {
 
 					System.err.println("Erro ao processar vaga: " + e.getMessage());
@@ -166,11 +168,11 @@ public class VagaslinkedinApplication {
 		page.waitForSelector("#job-details");
 		// String descricaoVaga = page.querySelector("#job-details").innerHTML();
 
-		System.out.println("Id da vaga: " + idVaga);
-		System.out.println("Título: " + tituloVaga);
-		System.out.println("Empresa: " + empresa);
+//		System.out.println("Id da vaga: " + idVaga);
+//		System.out.println("Título: " + tituloVaga);
+//		System.out.println("Empresa: " + empresa);
 		// System.out.println("Descrição: " + descricaoVaga);
-		System.out.println("-------------------------");
+//		System.out.println("-------------------------");
 	}
 
 	public static void rodarRodinhaMouseParaBaixo(Page page) {
