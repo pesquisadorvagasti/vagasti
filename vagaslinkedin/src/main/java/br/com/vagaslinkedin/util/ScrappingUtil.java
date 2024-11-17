@@ -24,8 +24,7 @@ public class ScrappingUtil {
 	public static void rolarParaFinalPagina(Page page) {
 
 		for (int i = 0; i <= 10; i++) {
-			rodarRodinhaMouseParaBaixo(page);
-			ScrappingUtil.aguardarEmSegundos(1);
+			rodarRodinhaMouseParaBaixo(page);			
 		}
 
 	}
