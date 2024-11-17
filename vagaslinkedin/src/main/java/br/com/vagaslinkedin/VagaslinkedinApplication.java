@@ -28,6 +28,8 @@ public class VagaslinkedinApplication {
 
 			aguardarEmSegundos(3);
 
+			abrirPaginaVagasLinkedin(page);
+
 			visualizarVagasLinkedin(page);
 
 			aguardarEmSegundos(60);
@@ -141,8 +143,8 @@ public class VagaslinkedinApplication {
 					quantidadeVagasCapturadas++;
 					System.out.println("Capturadas " + quantidadeVagasCapturadas + " vagas");
 				} catch (Exception e) {
-
-					System.err.println("Erro ao processar vaga: " + e.getMessage());
+					continue;
+					//System.err.println("Erro ao processar vaga: " + e.getMessage());
 				}
 			}
 
