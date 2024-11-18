@@ -1,10 +1,13 @@
 package br.com.vagaslinkedin.service;
 
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,23 +54,26 @@ public class LinkedinService {
 	}
 
 	public void visualizarVagasLinkedin(Page page) {
+		record LinguagemProgramacao(String descricao, String descricaoPesquisa) {
+		}
+		;
+		List<LinguagemProgramacao> listaLinguagensProgramacao = Stream.of(LinguagensProgramacaoEnum.values())
+				.map(l -> new LinguagemProgramacao(l.getDescricao(), l.getDescricaoPesquisa()))
+				.collect(Collectors.toList());
 
-		List<String> listaLinguagensProgramacao = Stream.of(LinguagensProgramacaoEnum.values())
-				.map(LinguagensProgramacaoEnum::getDescricao).toList();
-
-		listaLinguagensProgramacao = listaLinguagensProgramacao.stream().sorted().toList();
+		Collections.sort(listaLinguagensProgramacao, Comparator.comparing(LinguagemProgramacao::descricao));
 
 		int quantidadeVagasInicioCaptura = 0;
 		String linguagemInicioCaptura = "";
-		for (String linguagemProgramacao : listaLinguagensProgramacao) {
+		for (LinguagemProgramacao linguagemProgramacao : listaLinguagensProgramacao) {
 
-			String urlPaginaVagasLinkedin = obterUrlPaginaVagasLinkedin(linguagemProgramacao);
+			String urlPaginaVagasLinkedin = obterUrlPaginaVagasLinkedin(linguagemProgramacao.descricaoPesquisa);
 			Page paginaVagasLinkedin = abrirPaginaVagasLinkedinComParametros(page, urlPaginaVagasLinkedin, null);
 
 			int quantidadeVagasDisponiveis = obterQuantidadeVagasDisponiveis(paginaVagasLinkedin);
 
 			quantidadeVagasInicioCaptura = quantidadeVagasDisponiveis;
-			linguagemInicioCaptura = linguagemProgramacao;
+			linguagemInicioCaptura = linguagemProgramacao.descricao;
 
 			int quantidadePaginasPossiveis = (int) Math.ceil((double) quantidadeVagasDisponiveis / 25);
 
@@ -78,7 +84,7 @@ public class LinkedinService {
 
 				int quantidadeVagasDisponiveisMomento = obterQuantidadeVagasDisponiveis(paginaVagasLinkedin);
 
-				if (linguagemProgramacao.equals(linguagemInicioCaptura)
+				if (linguagemProgramacao.descricao.equals(linguagemInicioCaptura)
 						&& quantidadeVagasDisponiveisMomento < quantidadeVagasInicioCaptura) {
 					quantidadePaginasPossiveis = (int) Math.ceil((double) quantidadeVagasDisponiveisMomento / 25);
 				}
@@ -98,7 +104,7 @@ public class LinkedinService {
 
 					try {
 						Optional<VagaRequestDto> vagaRequestDto = obterInformacoesVagaAposClique(paginaVagasLinkedin,
-								vaga, linguagemProgramacao);
+								vaga, linguagemProgramacao.descricao);
 
 						vagaRequestDto.ifPresent(v -> cadastroVagaService.postarVaga(v));
 
