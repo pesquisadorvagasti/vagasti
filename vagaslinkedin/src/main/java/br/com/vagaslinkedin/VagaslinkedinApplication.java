@@ -5,7 +5,6 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ApplicationContext;
 
 import com.microsoft.playwright.Page;
-import com.microsoft.playwright.Playwright;
 
 import br.com.vagaslinkedin.service.LinkedinService;
 import br.com.vagaslinkedin.util.ScrappingUtil;
@@ -19,21 +18,9 @@ public class VagaslinkedinApplication {
 
 		LinkedinService linkedinService = applicationContext.getBean(LinkedinService.class);
 
-		try (Playwright playwright = Playwright.create()) {
+		Page page = ScrappingUtil.abrirBrowserPerfilUsuario();
 
-			Page page = ScrappingUtil.abrirBrowserMaximizado(playwright);
-
-			linkedinService.efetuarLoginGoogle(page);
-
-			ScrappingUtil.aguardarEmSegundos(2);
-
-			linkedinService.abrirPaginaVagasLinkedin(page);
-
-			linkedinService.visualizarVagasLinkedin(page);
-
-			ScrappingUtil.aguardarEmSegundos(60);
-
-		}
+		linkedinService.visualizarVagasLinkedin(page);
 
 	}
 

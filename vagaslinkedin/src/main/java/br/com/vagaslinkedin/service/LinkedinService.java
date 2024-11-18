@@ -2,16 +2,23 @@ package br.com.vagaslinkedin.service;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Stream;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.microsoft.playwright.ElementHandle;
 import com.microsoft.playwright.Page;
 
+import br.com.vagaslinkedin.domain.model.dto.VagaRequestDto;
+import br.com.vagaslinkedin.domain.model.enumerator.LinguagensProgramacaoEnum;
 import br.com.vagaslinkedin.util.ScrappingUtil;
 
 @Service
 public class LinkedinService {
+
+	@Autowired
+	private CadastroVagaService cadastroVagaService;
 
 	public void efetuarLoginGoogle(Page page) {
 
@@ -39,42 +46,50 @@ public class LinkedinService {
 	}
 
 	public void visualizarVagasLinkedin(Page page) {
+		List<String> listaLinguagensProgramacao = Stream.of(LinguagensProgramacaoEnum.values())
+				.map(LinguagensProgramacaoEnum::getDescricao).toList();
 
-		Page paginaVagasLinkedin = abrirPaginaVagasLinkedinComParametros(page, null);
-		ScrappingUtil.aguardarEmSegundos(7);
-		int quantidadeVagasDisponiveis = obterQuantidadeVagasDisponiveis(paginaVagasLinkedin);
-		int quantidadePaginasPossiveis = obterQuantidadePaginasPossiveis(quantidadeVagasDisponiveis);
+		for (String linguagemProgramacao : listaLinguagensProgramacao) {
 
-		int quantidadeItensMostrarPagina = -25;
-		int quantidadeVagasCapturadas = 0;
+			String urlPaginaVagasLinkedin = obterUrlPaginaVagasLinkedin(linguagemProgramacao);
+			Page paginaVagasLinkedin = abrirPaginaVagasLinkedinComParametros(page, urlPaginaVagasLinkedin, null);
+			int quantidadeVagasDisponiveis = obterQuantidadeVagasDisponiveis(paginaVagasLinkedin);
+			int quantidadePaginasPossiveis = (int) Math.ceil((double) quantidadeVagasDisponiveis / 25);
 
-		for (int i = 0; i < quantidadePaginasPossiveis; i++) {
-			quantidadeItensMostrarPagina += 25;
+			int quantidadeItensMostrarPagina = -25;
+			int quantidadeVagasCapturadas = 0;
 
-			if (quantidadeItensMostrarPagina > 0) {
-				page = abrirPaginaVagasLinkedinComParametros(paginaVagasLinkedin, quantidadeItensMostrarPagina);
-				ScrappingUtil.aguardarEmSegundos(7);
-			}
+			for (int i = 0; i < quantidadePaginasPossiveis; i++) {
+				quantidadeItensMostrarPagina += 25;
 
-			ElementHandle primeiraVaga = paginaVagasLinkedin.querySelector("[data-job-id]");
-			primeiraVaga.click();
-			ScrappingUtil.aguardarEmSegundos(1);
+				if (quantidadeItensMostrarPagina > 0) {
+					page = abrirPaginaVagasLinkedinComParametros(paginaVagasLinkedin, urlPaginaVagasLinkedin,
+							quantidadeItensMostrarPagina);
+					ScrappingUtil.aguardarEmSegundos(3);
+				}
 
-			ScrappingUtil.rolarParaFinalPagina(page);
-			List<ElementHandle> vagas = paginaVagasLinkedin.querySelectorAll("[data-job-id]");
+				ElementHandle primeiraVaga = paginaVagasLinkedin.querySelector("[data-job-id]");
+				primeiraVaga.click();
 
-			for (ElementHandle vaga : vagas) {
+				ScrappingUtil.rolarParaFinalPagina(page);
+				List<ElementHandle> vagas = paginaVagasLinkedin.querySelectorAll("[data-job-id]");
 
-				try {
-					clicarEmVagaPorVagaParaObterInformacoes(paginaVagasLinkedin, vaga);
-					quantidadeVagasCapturadas++;
-					System.out.println("Capturadas " + quantidadeVagasCapturadas + " vagas");
-				} catch (Exception e) {
-					continue;
-					// System.err.println("Erro ao processar vaga: " + e.getMessage());
+				for (ElementHandle vaga : vagas) {
+
+					try {
+						VagaRequestDto vagaRequestDto = obterInformacoesVagaAposClique(paginaVagasLinkedin, vaga,
+								linguagemProgramacao);
+
+						cadastroVagaService.postarVaga(vagaRequestDto);
+
+						quantidadeVagasCapturadas++;
+						System.out.println("Capturadas " + quantidadeVagasCapturadas + " vagas");
+					} catch (Exception e) {
+
+						System.err.println("Erro ao processar vaga: " + e.getMessage());
+					}
 				}
 			}
-
 		}
 	}
 
@@ -108,44 +123,41 @@ public class LinkedinService {
 		return quantidadePaginasDisponiveis - 25;
 	}
 
-	private Page abrirPaginaVagasLinkedinComParametros(Page page, Integer quantidadeItensMostrarPagina) {
-
-		page.waitForSelector("body");
-
-		String urlPaginaVagasLinkedin = "https://www.linkedin.com/jobs/search/?distance=100&f_WT=2&&keywords=Java&origin=JOB_SEARCH_PAGE_JOB_FILTER&refresh=true&spellCorrectionEnabled=true";
+	private Page abrirPaginaVagasLinkedinComParametros(Page page, String urlPaginaVagasLinkedin,
+			Integer quantidadeItensMostrarPagina) {
 
 		if (Objects.nonNull(quantidadeItensMostrarPagina)) {
 			urlPaginaVagasLinkedin = urlPaginaVagasLinkedin + "&start=" + quantidadeItensMostrarPagina;
 		}
 
 		page.navigate(urlPaginaVagasLinkedin);
+		page.waitForSelector("body");
 		return page;
 	}
 
-	private void clicarEmVagaPorVagaParaObterInformacoes(Page page, ElementHandle vaga) {
+	private VagaRequestDto obterInformacoesVagaAposClique(Page page, ElementHandle vaga, String linguagemProgramacao) {
 		vaga.click();
 
-		ScrappingUtil.aguardarEmSegundos(2);
+		page.waitForSelector("#job-details");
+
+		ScrappingUtil.aguardarEmSegundos(1);
 		page.waitForSelector(
 				".disabled.ember-view.job-card-container__link.job-card-list__title.job-card-list__title--link strong");
 
 		String idVaga = obterIdVaga(page.url());
 
+		String linkVaga = "https://www.linkedin.com/jobs/search/?currentJobId=" + idVaga;
 		String tituloVaga = vaga.querySelector(
 				".disabled.ember-view.job-card-container__link.job-card-list__title.job-card-list__title--link strong")
 				.textContent();
 
+		String descricaoVaga = page.querySelector("#job-details").innerHTML();
+
 		String empresa = vaga.querySelector(".job-card-container__primary-description").textContent()
 				.replace("\n                  ", "").replace("\n", "");
 
-		page.waitForSelector("#job-details");
-		// String descricaoVaga = page.querySelector("#job-details").innerHTML();
-
-//		System.out.println("Id da vaga: " + idVaga);
-//		System.out.println("Título: " + tituloVaga);
-//		System.out.println("Empresa: " + empresa);
-		// System.out.println("Descrição: " + descricaoVaga);
-//		System.out.println("-------------------------");
+		return new VagaRequestDto(null, Long.valueOf(idVaga), 1, linkVaga, linguagemProgramacao, empresa, tituloVaga,
+				descricaoVaga);
 	}
 
 	private String obterIdVaga(String url) {
@@ -161,4 +173,8 @@ public class LinkedinService {
 		return null;
 	}
 
+	private String obterUrlPaginaVagasLinkedin(String linguagemProgramacao) {
+		return "https://www.linkedin.com/jobs/search/?currentJobId=4079049333&distance=100.0&f_TPR=r86400&f_WT=2&geoId=106057199&keywords="
+				+ linguagemProgramacao + "&origin=JOB_SEARCH_PAGE_JOB_FILTER";
+	}
 }
