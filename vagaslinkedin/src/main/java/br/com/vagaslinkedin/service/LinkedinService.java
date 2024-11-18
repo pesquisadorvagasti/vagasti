@@ -3,14 +3,18 @@ package br.com.vagaslinkedin.service;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.microsoft.playwright.ElementHandle;
+import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 
+import br.com.vagaslinkedin.domain.model.dto.InformacaoInicialVagaDto;
 import br.com.vagaslinkedin.domain.model.dto.VagaRequestDto;
 import br.com.vagaslinkedin.domain.model.enumerator.LinguagensProgramacaoEnum;
 import br.com.vagaslinkedin.util.ScrappingUtil;
@@ -86,9 +90,6 @@ public class LinkedinService {
 							quantidadeItensMostrarPagina);
 					ScrappingUtil.aguardarEmSegundos(3);
 				}
-
-				ElementHandle primeiraVaga = paginaVagasLinkedin.waitForSelector("[data-job-id]");
-				primeiraVaga.click();
 
 				ScrappingUtil.rolarParaFinalPagina(page);
 				List<ElementHandle> vagas = paginaVagasLinkedin.querySelectorAll("[data-job-id]");
@@ -177,8 +178,57 @@ public class LinkedinService {
 		String empresa = vaga.waitForSelector(".job-card-container__primary-description").textContent()
 				.replace("\n                  ", "").replace("\n", "");
 
-		return Optional.of(new VagaRequestDto(null, Long.valueOf(idVaga), 1, linkVaga, linguagemProgramacao, empresa,
-				tituloVaga, descricaoVaga));
+		Optional<InformacaoInicialVagaDto> informacaoInicialVagaDto = obterInformacoesIniciasVaga(page);
+		String localizacao = null;
+		String postadoEm = null;
+		Integer quantidadeCandidaturas = null;
+
+		if (informacaoInicialVagaDto.isPresent()) {
+			localizacao = informacaoInicialVagaDto.get().localizacao();
+			postadoEm = informacaoInicialVagaDto.get().postadoEm();
+			quantidadeCandidaturas = informacaoInicialVagaDto.get().quantidadeCandidaturas();
+		}
+
+		return Optional.of(new VagaRequestDto(null, Long.valueOf(idVaga), localizacao, postadoEm,
+				quantidadeCandidaturas, 1, linkVaga, linguagemProgramacao, empresa, tituloVaga, descricaoVaga));
+
+	}
+
+	private Optional<InformacaoInicialVagaDto> obterInformacoesIniciasVaga(Page page) {
+
+		Locator detalheVaga = page
+				.locator("[class='job-details-jobs-unified-top-card__primary-description-container']");
+
+		Locator detalhesVaga = detalheVaga.locator("[class='tvm__text tvm__text--low-emphasis']");
+
+		Locator elementoPostadoEm = detalheVaga.locator("[class = 'tvm__text tvm__text--positive']");
+
+		if (Objects.isNull(detalheVaga) || Objects.isNull(detalhesVaga))
+			return Optional.empty();
+
+		if (Objects.isNull(elementoPostadoEm) || Objects.isNull(detalhesVaga) || Objects.isNull(detalhesVaga.nth(0))
+				|| Objects.isNull(detalhesVaga.nth(2)) || Objects.isNull(detalhesVaga.nth(4))) {
+
+			return Optional.empty();
+		}
+		String localidade = detalhesVaga.nth(0).textContent().trim();
+		String candidaturas = detalhesVaga.nth(3).textContent().trim();
+		String postadoEm = elementoPostadoEm.textContent().trim();
+
+		return Optional.of(new InformacaoInicialVagaDto(localidade, postadoEm, extrairNumero(candidaturas)));
+
+	}
+
+	public static Integer extrairNumero(String texto) {
+
+		Pattern pattern = Pattern.compile("\\d+");
+		Matcher matcher = pattern.matcher(texto);
+
+		if (matcher.find()) {
+
+			return Integer.parseInt(matcher.group());
+		}
+		return null;
 	}
 
 	private String obterIdVaga(String url) {

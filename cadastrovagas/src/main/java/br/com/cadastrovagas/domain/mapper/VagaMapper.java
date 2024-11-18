@@ -7,8 +7,10 @@ import br.com.cadastrovagas.domain.enumerator.SiteVagaEnum;
 public class VagaMapper {
 
 	public static VagaEntity convertToEntity(VagaRequestDto vagaRequestDto) {
-		return new VagaEntity(null, vagaRequestDto.idVaga(), SiteVagaEnum.obterPorCodigo(vagaRequestDto.idSite()),
-				vagaRequestDto.linkVaga(), vagaRequestDto.linguagem(), vagaRequestDto.empresa(),
-				vagaRequestDto.tituloVaga(), vagaRequestDto.descricao());
+		return new VagaEntity(vagaRequestDto.sqVaga(), vagaRequestDto.idVaga(), vagaRequestDto.localidade(),
+				vagaRequestDto.postadaEm(), vagaRequestDto.quantidadeCandidaturas(),
+				SiteVagaEnum.obterPorCodigo(vagaRequestDto.idSite()), vagaRequestDto.linkVaga(),
+				vagaRequestDto.linguagem(), vagaRequestDto.empresa(), vagaRequestDto.tituloVaga(),
+				vagaRequestDto.descricao());
 	}
 }

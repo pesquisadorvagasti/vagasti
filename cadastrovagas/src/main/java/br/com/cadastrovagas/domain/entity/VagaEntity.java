@@ -6,7 +6,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 
 @Entity
@@ -19,7 +18,12 @@ public class VagaEntity {
 
 	@Column(name = "ID_VAGA")
 	private Long idVaga;
-	@Column(name = "ID_SITE_VAGA")
+	@Column(name = "LOCALIDADE")
+	private String localidade;
+	@Column(name = "POSTADA_EM")
+	private String postadaEm;
+	@Column(name = "QTD_CANDIDATURAS")
+	private Integer quantidadeCandidaturas;
 	private SiteVagaEnum site;
 	@Column(name = "LINK_VAGA")
 	private String linkVaga;
@@ -36,11 +40,14 @@ public class VagaEntity {
 
 	}
 
-	public VagaEntity(Long sqVaga, Long idVaga, SiteVagaEnum site, String linkVaga, String linguagem, String empresa,
-			String tituloVaga, String descricao) {
+	public VagaEntity(Long sqVaga, Long idVaga, String localidade, String postadaEm, Integer quantidadeCandidaturas,
+			SiteVagaEnum site, String linkVaga, String linguagem, String empresa, String tituloVaga, String descricao) {
 		super();
 		this.sqVaga = sqVaga;
 		this.idVaga = idVaga;
+		this.localidade = localidade;
+		this.postadaEm = postadaEm;
+		this.quantidadeCandidaturas = quantidadeCandidaturas;
 		this.site = site;
 		this.linkVaga = linkVaga;
 		this.linguagem = linguagem;
@@ -111,6 +118,30 @@ public class VagaEntity {
 
 	public void setLinguagem(String linguagem) {
 		this.linguagem = linguagem;
+	}
+
+	public String getLocalidade() {
+		return localidade;
+	}
+
+	public void setLocalidade(String localidade) {
+		this.localidade = localidade;
+	}
+
+	public String getPostadaEm() {
+		return postadaEm;
+	}
+
+	public void setPostadaEm(String postadaEm) {
+		this.postadaEm = postadaEm;
+	}
+
+	public Integer getQuantidadeCandidaturas() {
+		return quantidadeCandidaturas;
+	}
+
+	public void setQuantidadeCandidaturas(Integer quantidadeCandidaturas) {
+		this.quantidadeCandidaturas = quantidadeCandidaturas;
 	}
 
 }
