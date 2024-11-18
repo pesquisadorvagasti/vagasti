@@ -2,6 +2,7 @@ package br.com.vagaslinkedin.service;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,20 +47,38 @@ public class LinkedinService {
 	}
 
 	public void visualizarVagasLinkedin(Page page) {
+
 		List<String> listaLinguagensProgramacao = Stream.of(LinguagensProgramacaoEnum.values())
 				.map(LinguagensProgramacaoEnum::getDescricao).toList();
 
+		listaLinguagensProgramacao = listaLinguagensProgramacao.stream().sorted().toList();
+
+		int quantidadeVagasInicioCaptura = 0;
+		String linguagemInicioCaptura = "";
 		for (String linguagemProgramacao : listaLinguagensProgramacao) {
 
 			String urlPaginaVagasLinkedin = obterUrlPaginaVagasLinkedin(linguagemProgramacao);
 			Page paginaVagasLinkedin = abrirPaginaVagasLinkedinComParametros(page, urlPaginaVagasLinkedin, null);
+
 			int quantidadeVagasDisponiveis = obterQuantidadeVagasDisponiveis(paginaVagasLinkedin);
+
+			quantidadeVagasInicioCaptura = quantidadeVagasDisponiveis;
+			linguagemInicioCaptura = linguagemProgramacao;
+
 			int quantidadePaginasPossiveis = (int) Math.ceil((double) quantidadeVagasDisponiveis / 25);
 
 			int quantidadeItensMostrarPagina = -25;
 			int quantidadeVagasCapturadas = 0;
 
 			for (int i = 0; i < quantidadePaginasPossiveis; i++) {
+
+				int quantidadeVagasDisponiveisMomento = obterQuantidadeVagasDisponiveis(paginaVagasLinkedin);
+
+				if (linguagemProgramacao.equals(linguagemInicioCaptura)
+						&& quantidadeVagasDisponiveisMomento < quantidadeVagasInicioCaptura) {
+					quantidadePaginasPossiveis = (int) Math.ceil((double) quantidadeVagasDisponiveisMomento / 25);
+				}
+				System.out.println("Quantidade de páginas " + quantidadePaginasPossiveis);
 				quantidadeItensMostrarPagina += 25;
 
 				if (quantidadeItensMostrarPagina > 0) {
@@ -68,7 +87,7 @@ public class LinkedinService {
 					ScrappingUtil.aguardarEmSegundos(3);
 				}
 
-				ElementHandle primeiraVaga = paginaVagasLinkedin.querySelector("[data-job-id]");
+				ElementHandle primeiraVaga = paginaVagasLinkedin.waitForSelector("[data-job-id]");
 				primeiraVaga.click();
 
 				ScrappingUtil.rolarParaFinalPagina(page);
@@ -77,10 +96,10 @@ public class LinkedinService {
 				for (ElementHandle vaga : vagas) {
 
 					try {
-						VagaRequestDto vagaRequestDto = obterInformacoesVagaAposClique(paginaVagasLinkedin, vaga,
-								linguagemProgramacao);
+						Optional<VagaRequestDto> vagaRequestDto = obterInformacoesVagaAposClique(paginaVagasLinkedin,
+								vaga, linguagemProgramacao);
 
-						cadastroVagaService.postarVaga(vagaRequestDto);
+						vagaRequestDto.ifPresent(v -> cadastroVagaService.postarVaga(v));
 
 						quantidadeVagasCapturadas++;
 						System.out.println("Capturadas " + quantidadeVagasCapturadas + " vagas");
@@ -95,7 +114,7 @@ public class LinkedinService {
 
 	private int obterQuantidadeVagasDisponiveis(Page page) {
 
-		ElementHandle elementoQtdItensPagina = page.querySelector(".jobs-search-results-list__subtitle");
+		ElementHandle elementoQtdItensPagina = page.waitForSelector(".jobs-search-results-list__subtitle");
 
 		if (elementoQtdItensPagina != null) {
 
@@ -135,29 +154,31 @@ public class LinkedinService {
 		return page;
 	}
 
-	private VagaRequestDto obterInformacoesVagaAposClique(Page page, ElementHandle vaga, String linguagemProgramacao) {
+	private Optional<VagaRequestDto> obterInformacoesVagaAposClique(Page page, ElementHandle vaga,
+			String linguagemProgramacao) {
+
+		if (Objects.isNull(vaga) || Objects.isNull(vaga.querySelector("Strong")))
+			return Optional.empty();
+
 		vaga.click();
 
 		page.waitForSelector("#job-details");
 
 		ScrappingUtil.aguardarEmSegundos(1);
-		page.waitForSelector(
-				".disabled.ember-view.job-card-container__link.job-card-list__title.job-card-list__title--link strong");
 
 		String idVaga = obterIdVaga(page.url());
 
 		String linkVaga = "https://www.linkedin.com/jobs/search/?currentJobId=" + idVaga;
-		String tituloVaga = vaga.querySelector(
-				".disabled.ember-view.job-card-container__link.job-card-list__title.job-card-list__title--link strong")
-				.textContent();
 
-		String descricaoVaga = page.querySelector("#job-details").innerHTML();
+		String tituloVaga = vaga.waitForSelector("strong").textContent();
 
-		String empresa = vaga.querySelector(".job-card-container__primary-description").textContent()
+		String descricaoVaga = page.waitForSelector("#job-details").innerHTML();
+
+		String empresa = vaga.waitForSelector(".job-card-container__primary-description").textContent()
 				.replace("\n                  ", "").replace("\n", "");
 
-		return new VagaRequestDto(null, Long.valueOf(idVaga), 1, linkVaga, linguagemProgramacao, empresa, tituloVaga,
-				descricaoVaga);
+		return Optional.of(new VagaRequestDto(null, Long.valueOf(idVaga), 1, linkVaga, linguagemProgramacao, empresa,
+				tituloVaga, descricaoVaga));
 	}
 
 	private String obterIdVaga(String url) {
