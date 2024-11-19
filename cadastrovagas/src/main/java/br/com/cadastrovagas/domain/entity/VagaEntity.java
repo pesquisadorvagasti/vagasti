@@ -35,13 +35,16 @@ public class VagaEntity {
 	private String tituloVaga;
 	@Column(name = "DS_VAGA", columnDefinition = "TEXT")
 	private String descricao;
+	@Column(name = "CANDIDATURA_SIMPLIFICADA")
+	private Boolean candidaturaSimplificada;
 
 	public VagaEntity() {
 
 	}
 
 	public VagaEntity(Long sqVaga, Long idVaga, String localidade, String postadaEm, Integer quantidadeCandidaturas,
-			SiteVagaEnum site, String linkVaga, String linguagem, String empresa, String tituloVaga, String descricao) {
+			SiteVagaEnum site, String linkVaga, String linguagem, String empresa, String tituloVaga, String descricao,
+			Boolean candidaturaSimplificada) {
 		super();
 		this.sqVaga = sqVaga;
 		this.idVaga = idVaga;
@@ -54,6 +57,8 @@ public class VagaEntity {
 		this.empresa = empresa;
 		this.tituloVaga = tituloVaga;
 		this.descricao = descricao;
+		this.candidaturaSimplificada = candidaturaSimplificada;
+
 	}
 
 	public Long getSqVaga() {
@@ -142,6 +147,14 @@ public class VagaEntity {
 
 	public void setQuantidadeCandidaturas(Integer quantidadeCandidaturas) {
 		this.quantidadeCandidaturas = quantidadeCandidaturas;
+	}
+
+	public Boolean getCandidaturaSimplificada() {
+		return candidaturaSimplificada;
+	}
+
+	public void setCandidaturaSimplificada(Boolean candidaturaSimplificada) {
+		this.candidaturaSimplificada = candidaturaSimplificada;
 	}
 
 }

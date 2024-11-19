@@ -11,6 +11,6 @@ public class VagaMapper {
 				vagaRequestDto.postadaEm(), vagaRequestDto.quantidadeCandidaturas(),
 				SiteVagaEnum.obterPorCodigo(vagaRequestDto.idSite()), vagaRequestDto.linkVaga(),
 				vagaRequestDto.linguagem(), vagaRequestDto.empresa(), vagaRequestDto.tituloVaga(),
-				vagaRequestDto.descricao());
+				vagaRequestDto.descricao(), vagaRequestDto.candidaturaSimplificada());
 	}
 }

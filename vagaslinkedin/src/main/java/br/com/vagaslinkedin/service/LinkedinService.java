@@ -5,8 +5,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -24,6 +22,8 @@ import br.com.vagaslinkedin.util.ScrappingUtil;
 
 @Service
 public class LinkedinService {
+	record LinguagemProgramacao(String descricao, String descricaoPesquisa) {
+	};
 
 	@Autowired
 	private CadastroVagaService cadastroVagaService;
@@ -54,12 +54,8 @@ public class LinkedinService {
 	}
 
 	public void visualizarVagasLinkedin(Page page) {
-		record LinguagemProgramacao(String descricao, String descricaoPesquisa) {
-		}
-		;
-		List<LinguagemProgramacao> listaLinguagensProgramacao = Stream.of(LinguagensProgramacaoEnum.values())
-				.map(l -> new LinguagemProgramacao(l.getDescricao(), l.getDescricaoPesquisa()))
-				.collect(Collectors.toList());
+
+		List<LinguagemProgramacao> listaLinguagensProgramacao = obterListaLinguagensProgramacao();
 
 		Collections.sort(listaLinguagensProgramacao, Comparator.comparing(LinguagemProgramacao::descricao));
 
@@ -103,6 +99,7 @@ public class LinkedinService {
 				for (ElementHandle vaga : vagas) {
 
 					try {
+
 						Optional<VagaRequestDto> vagaRequestDto = obterInformacoesVagaAposClique(paginaVagasLinkedin,
 								vaga, linguagemProgramacao.descricao);
 
@@ -117,6 +114,12 @@ public class LinkedinService {
 				}
 			}
 		}
+	}
+
+	private List<LinguagemProgramacao> obterListaLinguagensProgramacao() {
+		return Stream.of(LinguagensProgramacaoEnum.values())
+				.map(l -> new LinguagemProgramacao(l.getDescricao(), l.getDescricaoPesquisa()))
+				.collect(Collectors.toList());
 	}
 
 	private int obterQuantidadeVagasDisponiveis(Page page) {
@@ -188,15 +191,29 @@ public class LinkedinService {
 		String localizacao = null;
 		String postadoEm = null;
 		Integer quantidadeCandidaturas = null;
+		Boolean candidaturaSimplificada = Boolean.FALSE;
+
+		boolean linguagemPrincipalExisteNaVaga = ScrappingUtil.palavraExisteNoTexto(linguagemProgramacao,
+				descricaoVaga);
+
+		if (!linguagemPrincipalExisteNaVaga) {
+			LinguagemProgramacao linguagemVaga = obterListaLinguagensProgramacao().stream()
+					.filter(linguagem -> ScrappingUtil.palavraExisteNoTexto(linguagem.descricao, descricaoVaga))
+					.findFirst().orElse(null);
+
+			linguagemProgramacao = Objects.nonNull(linguagemVaga) ? linguagemVaga.descricao : null;
+		}
 
 		if (informacaoInicialVagaDto.isPresent()) {
 			localizacao = informacaoInicialVagaDto.get().localizacao();
 			postadoEm = informacaoInicialVagaDto.get().postadoEm();
 			quantidadeCandidaturas = informacaoInicialVagaDto.get().quantidadeCandidaturas();
+			candidaturaSimplificada = informacaoInicialVagaDto.get().candidaturaSimplificada();
 		}
 
-		return Optional.of(new VagaRequestDto(null, Long.valueOf(idVaga), localizacao, postadoEm,
-				quantidadeCandidaturas, 1, linkVaga, linguagemProgramacao, empresa, tituloVaga, descricaoVaga));
+		return Optional
+				.of(new VagaRequestDto(null, Long.valueOf(idVaga), localizacao, postadoEm, quantidadeCandidaturas, 1,
+						linkVaga, linguagemProgramacao, empresa, tituloVaga, descricaoVaga, candidaturaSimplificada));
 
 	}
 
@@ -208,6 +225,22 @@ public class LinkedinService {
 		Locator detalhesVaga = detalheVaga.locator("[class='tvm__text tvm__text--low-emphasis']");
 
 		Locator elementoPostadoEm = detalheVaga.locator("[class = 'tvm__text tvm__text--positive']");
+
+		boolean candidaturaSimplificada = false;
+
+		Locator divBotaoCandidatura = page.locator("[class='jobs-apply-button--top-card']");
+
+		Locator botaoCandidatura = divBotaoCandidatura.locator("button");
+
+		if (Objects.isNull(divBotaoCandidatura) || botaoCandidatura.count() == 0) {
+			candidaturaSimplificada = false;
+		}
+
+		String textoBotaoCandidaturaSimplificada = botaoCandidatura.first().textContent();
+		textoBotaoCandidaturaSimplificada = textoBotaoCandidaturaSimplificada
+				.replace("        \\n    \\n    \\n\\n\\n\\n\\n    ", "").replace("\n", "").trim();
+
+		candidaturaSimplificada = textoBotaoCandidaturaSimplificada.equals("Candidatura simplificada");
 
 		if (Objects.isNull(detalheVaga) || Objects.isNull(detalhesVaga))
 			return Optional.empty();
@@ -221,20 +254,9 @@ public class LinkedinService {
 		String candidaturas = detalhesVaga.nth(3).textContent().trim();
 		String postadoEm = elementoPostadoEm.textContent().trim();
 
-		return Optional.of(new InformacaoInicialVagaDto(localidade, postadoEm, extrairNumero(candidaturas)));
+		return Optional.of(new InformacaoInicialVagaDto(localidade, postadoEm,
+				ScrappingUtil.extrairNumero(candidaturas), candidaturaSimplificada));
 
-	}
-
-	public static Integer extrairNumero(String texto) {
-
-		Pattern pattern = Pattern.compile("\\d+");
-		Matcher matcher = pattern.matcher(texto);
-
-		if (matcher.find()) {
-
-			return Integer.parseInt(matcher.group());
-		}
-		return null;
 	}
 
 	private String obterIdVaga(String url) {

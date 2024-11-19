@@ -3,6 +3,8 @@ package br.com.vagaslinkedin.util;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.BrowserContext;
@@ -35,7 +37,7 @@ public class ScrappingUtil {
 	public static void rolarParaFinalPagina(Page page) {
 
 		for (int i = 0; i <= 10; i++) {
-			rodarRodinhaMouseParaBaixo(page);			
+			rodarRodinhaMouseParaBaixo(page);
 		}
 
 	}
@@ -52,24 +54,42 @@ public class ScrappingUtil {
 	}
 
 	public static Page abrirBrowserPerfilUsuario() {
-		Playwright playwright = Playwright.create(); // Remova o try-with-resources para manter o Playwright ativo
+		Playwright playwright = Playwright.create();
 
 		String bravePath = "C:\\Program Files\\BraveSoftware\\Brave-Browser\\Application\\brave.exe";
 		String userDataDir = "C:\\Users\\Wes\\AppData\\Local\\BraveSoftware\\Brave-Browser\\User Data\\Default";
 
-		// Configurar o navegador
 		BrowserContext context = playwright.chromium().launchPersistentContext(Paths.get(userDataDir),
-				new BrowserType.LaunchPersistentContextOptions().setHeadless(false) // Modo visível
-						.setExecutablePath(Paths.get(bravePath)).setViewportSize(null) // Permitir maximização
-		);
+				new BrowserType.LaunchPersistentContextOptions().setHeadless(false)
+						.setExecutablePath(Paths.get(bravePath)).setViewportSize(null));
 
-		// Reutilizar a página inicial aberta ou criar uma nova
 		Page page = context.pages().isEmpty() ? context.newPage() : context.pages().get(0);
 
-		// Maximizar a janela (se necessário, usando JavaScript)
 		page.evaluate("window.moveTo(0, 0); window.resizeTo(screen.width, screen.height);");
 
 		return page;
+	}
+
+	public static boolean palavraExisteNoTexto(String palavra, String texto) {
+
+		String regex = "\\b" + Pattern.quote(palavra) + "\\b";
+
+		Pattern pattern = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
+
+		return pattern.matcher(texto).find();
+
+	}
+
+	public static Integer extrairNumero(String texto) {
+
+		Pattern pattern = Pattern.compile("\\d+");
+		Matcher matcher = pattern.matcher(texto);
+
+		if (matcher.find()) {
+
+			return Integer.parseInt(matcher.group());
+		}
+		return null;
 	}
 
 	private ScrappingUtil() {
