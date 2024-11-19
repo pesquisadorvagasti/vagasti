@@ -27,7 +27,7 @@ public class VagaEntity {
 	private SiteVagaEnum site;
 	@Column(name = "LINK_VAGA")
 	private String linkVaga;
-	@Column(name = "LINGUAGEM")
+	@Column(name = "DS_LINGUAGEM")
 	private String linguagem;
 	@Column(name = "DS_EMPRESA")
 	private String empresa;
@@ -37,6 +37,8 @@ public class VagaEntity {
 	private String descricao;
 	@Column(name = "CANDIDATURA_SIMPLIFICADA")
 	private Boolean candidaturaSimplificada;
+	@Column(name = "DS_MODALIDADE_TRABALHO")
+	private String modalidadeTrabalho;
 
 	public VagaEntity() {
 
@@ -44,7 +46,7 @@ public class VagaEntity {
 
 	public VagaEntity(Long sqVaga, Long idVaga, String localidade, String postadaEm, Integer quantidadeCandidaturas,
 			SiteVagaEnum site, String linkVaga, String linguagem, String empresa, String tituloVaga, String descricao,
-			Boolean candidaturaSimplificada) {
+			Boolean candidaturaSimplificada, String modalidadeTrabalho) {
 		super();
 		this.sqVaga = sqVaga;
 		this.idVaga = idVaga;
@@ -58,6 +60,7 @@ public class VagaEntity {
 		this.tituloVaga = tituloVaga;
 		this.descricao = descricao;
 		this.candidaturaSimplificada = candidaturaSimplificada;
+		this.modalidadeTrabalho = modalidadeTrabalho;
 
 	}
 
@@ -155,6 +158,14 @@ public class VagaEntity {
 
 	public void setCandidaturaSimplificada(Boolean candidaturaSimplificada) {
 		this.candidaturaSimplificada = candidaturaSimplificada;
+	}
+
+	public String getModalidadeTrabalho() {
+		return modalidadeTrabalho;
+	}
+
+	public void setModalidadeTrabalho(String modalidadeTrabalho) {
+		this.modalidadeTrabalho = modalidadeTrabalho;
 	}
 
 }
