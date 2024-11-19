@@ -26,7 +26,7 @@ public class LinkedinService {
 	record LinguagemProgramacao(Integer codigo, String descricao, String descricaoPesquisa) {
 	};
 
-	record ModalidadeTrabalho(Integer codigo, String descricaoModalidadeTrabalho) {
+	record ModalidadeTrabalho(Integer codigo, String descricaoModalidadeTrabalho, Integer ordem) {
 	};
 
 	@Autowired
@@ -61,28 +61,32 @@ public class LinkedinService {
 
 		List<LinguagemProgramacao> listaLinguagensProgramacao = obterListaLinguagensProgramacao();
 
-		int quantidadeVagasInicioCaptura = 0;
-		String linguagemInicioCaptura = "";
-
 		List<ModalidadeTrabalho> modalidadesTrabalho = obterModalidadesTrabalho();
 
 		for (ModalidadeTrabalho modalidadeTrabalho : modalidadesTrabalho) {
 			for (LinguagemProgramacao linguagemProgramacao : listaLinguagensProgramacao) {
-
+				boolean irParaProximaLinguagem = false;
 				String urlPaginaVagasLinkedin = obterUrlPaginaVagasLinkedin(linguagemProgramacao.descricaoPesquisa,
 						modalidadeTrabalho.codigo);
 				Page paginaVagasLinkedin = abrirPaginaVagasLinkedinComParametros(page, urlPaginaVagasLinkedin);
 
-				linguagemInicioCaptura = linguagemProgramacao.descricao;
-
 				int contador = 0;
 
 				Locator botaoProximaPagina = page.locator("[aria-label='Ver próxima página']");
-				
+
 				while (Objects.nonNull(botaoProximaPagina)) {
 					if (contador > 0) {
-					botaoProximaPagina.click();
+						botaoProximaPagina.click();
+						Locator infoNaoHaMaisVagas = page.locator("[class='t-24 t-black t-normal text-align-center']");
+						if (Objects.nonNull(infoNaoHaMaisVagas) && infoNaoHaMaisVagas.textContent()
+								.contains("Nenhuma vaga corresponde aos seus critérios")) {
+							irParaProximaLinguagem = true;
+						}
 					}
+					if (irParaProximaLinguagem) {
+						continue;
+					}
+
 					ScrappingUtil.rolarParaFinalPagina(page);
 					List<ElementHandle> vagas = paginaVagasLinkedin.querySelectorAll("[data-job-id]");
 
@@ -118,39 +122,10 @@ public class LinkedinService {
 
 	private List<ModalidadeTrabalho> obterModalidadesTrabalho() {
 		List<ModalidadeTrabalho> modalidades = Stream.of(ModalidadeTrabalhoEnum.values())
-				.map(m -> new ModalidadeTrabalho(m.getCodigo(), m.getDescricao())).collect(Collectors.toList());
-		Collections.sort(modalidades, Comparator.comparing(ModalidadeTrabalho::codigo));
+				.map(m -> new ModalidadeTrabalho(m.getCodigo(), m.getDescricao(), m.getOrdem()))
+				.collect(Collectors.toList());
+		Collections.sort(modalidades, Comparator.comparing(ModalidadeTrabalho::ordem));
 		return modalidades;
-	}
-
-	private int obterQuantidadeVagasDisponiveis(Page page) {
-
-		ElementHandle elementoQtdItensPagina = page.waitForSelector(".jobs-search-results-list__subtitle");
-
-		if (elementoQtdItensPagina != null) {
-
-			String textoQtdItensPagina = elementoQtdItensPagina.textContent();
-
-			textoQtdItensPagina = textoQtdItensPagina.replace("\n                  \n                    ", "");
-			String[] partes = textoQtdItensPagina.split(" ");
-			String qtdItensString = partes[0].replace(".", "");
-
-			try {
-				return Integer.parseInt(qtdItensString);
-			} catch (NumberFormatException e) {
-				System.err.println("Erro ao converter a quantidade de itens para número: " + e.getMessage());
-			}
-		} else {
-			System.err.println("Elemento não encontrado na página!");
-		}
-
-		return 0;
-	}
-
-	private int obterQuantidadePaginasPossiveis(int quantidadeVagasDisponiveis) {
-
-		int quantidadePaginasDisponiveis = quantidadeVagasDisponiveis / 25;
-		return quantidadePaginasDisponiveis - 25;
 	}
 
 	private Page abrirPaginaVagasLinkedinComParametros(Page page, String urlPaginaVagasLinkedin) {
