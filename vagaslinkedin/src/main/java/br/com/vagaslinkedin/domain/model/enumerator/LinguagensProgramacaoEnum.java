@@ -1,19 +1,25 @@
 package br.com.vagaslinkedin.domain.model.enumerator;
 
 public enum LinguagensProgramacaoEnum {
-	JAVA(1, "Java", "Java"), KOTLIN(2, "Kotlin", "Kotlin"), CSHARP(3, "C#", "C%23"),
-	JAVASCRIPT(4, "JavaScript", "JavaScript"), PHP(5, "PHP", "PHP"), PYTHON(6, "Python", "Python"),
-	C_MAIS_MAIS(7, "C++", "C%2B%2B"), SWIFT(8, "Swift", "Swift"), GO(9, "Go", "Go"), RUBY(10, "Ruby", "Ruby"),
-	FLUTTER(1, "Flutter", "Flutter");
+	JAVA(1, "Java", "Java",1),
+	CSHARP(3, "C#", "C%23",2), 
+	KOTLIN(2, "Kotlin", "Kotlin",3), 
+	JAVASCRIPT(4, "JavaScript", "JavaScript",4),
+	PYTHON(6, "Python", "Python",5),
+	PHP(5, "PHP", "PHP",6),
+	RUBY(10, "Ruby", "Ruby",7),
+	GO(9, "Go", "Go",8);
 
 	private final Integer codigo;
 	private final String descricao;
 	private final String descricaoPesquisa;
+	private final Integer ordem;
 
-	LinguagensProgramacaoEnum(Integer codigo, String descricao, String descricaoPesquisa) {
+	LinguagensProgramacaoEnum(Integer codigo, String descricao, String descricaoPesquisa,Integer ordem) {
 		this.codigo = codigo;
 		this.descricao = descricao;
 		this.descricaoPesquisa = descricaoPesquisa;
+		this.ordem = ordem;
 	}
 
 	public Integer getCodigo() {
@@ -26,6 +32,10 @@ public enum LinguagensProgramacaoEnum {
 
 	public String getDescricaoPesquisa() {
 		return descricaoPesquisa;
+	}
+
+	public Integer getOrdem() {
+		return ordem;
 	}
 
 }

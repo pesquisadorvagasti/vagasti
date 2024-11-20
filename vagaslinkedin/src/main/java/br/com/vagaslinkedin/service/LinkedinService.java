@@ -23,7 +23,7 @@ import br.com.vagaslinkedin.util.ScrappingUtil;
 
 @Service
 public class LinkedinService {
-	record LinguagemProgramacao(Integer codigo, String descricao, String descricaoPesquisa) {
+	record LinguagemProgramacao(Integer codigo, String descricao, String descricaoPesquisa, Integer ordem) {
 	};
 
 	record ModalidadeTrabalho(Integer codigo, String descricaoModalidadeTrabalho, Integer ordem) {
@@ -117,7 +117,8 @@ public class LinkedinService {
 
 	private void clicarBotaoProximaPagina(Page page) {
 		Locator botaoProximaPagina = page.locator("[aria-label='Ver próxima página']");
-		botaoProximaPagina.click();
+		if (botaoProximaPagina.isVisible())
+			botaoProximaPagina.click();
 	}
 
 	private int obterQuantidadePaginasDisponiveis(Page page) {
@@ -127,7 +128,7 @@ public class LinkedinService {
 		boolean temProximaPagina = true;
 		while (temProximaPagina) {
 			Locator botaoProximaPagina = page.locator("[aria-label='Ver próxima página']");
-			if (botaoProximaPagina.count() > 0) {
+			if (botaoProximaPagina.isVisible()) {
 				botaoProximaPagina.click();
 				qtdPaginas++;
 				temProximaPagina = true;
@@ -158,10 +159,10 @@ public class LinkedinService {
 	}
 
 	private List<LinguagemProgramacao> obterListaLinguagensProgramacao() {
-		List<LinguagemProgramacao> linguagens = Stream.of(LinguagensProgramacaoEnum.values())
-				.map(l -> new LinguagemProgramacao(l.getCodigo(), l.getDescricao(), l.getDescricaoPesquisa()))
+		List<LinguagemProgramacao> linguagens = Stream.of(LinguagensProgramacaoEnum.values()).map(
+				l -> new LinguagemProgramacao(l.getCodigo(), l.getDescricao(), l.getDescricaoPesquisa(), l.getOrdem()))
 				.collect(Collectors.toList());
-		Collections.sort(linguagens, Comparator.comparing(LinguagemProgramacao::codigo));
+		Collections.sort(linguagens, Comparator.comparing(LinguagemProgramacao::ordem));
 		return linguagens;
 	}
 
