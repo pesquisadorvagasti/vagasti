@@ -65,29 +65,23 @@ public class LinkedinService {
 
 		for (ModalidadeTrabalho modalidadeTrabalho : modalidadesTrabalho) {
 			for (LinguagemProgramacao linguagemProgramacao : listaLinguagensProgramacao) {
-				boolean irParaProximaLinguagem = false;
+
 				String urlPaginaVagasLinkedin = obterUrlPaginaVagasLinkedin(linguagemProgramacao.descricaoPesquisa,
 						modalidadeTrabalho.codigo);
 				Page paginaVagasLinkedin = abrirPaginaVagasLinkedinComParametros(page, urlPaginaVagasLinkedin);
+				ScrappingUtil.aguardarEmSegundos(2);
 
+				int qtdPaginasDisponiveis = obterQuantidadePaginasDisponiveis(page);
+				clicarPrimeiraPagina(page);
 				int contador = 0;
 
-				Locator botaoProximaPagina = page.locator("[aria-label='Ver próxima página']");
-
-				while (Objects.nonNull(botaoProximaPagina)) {
-					if (contador > 0) {
-						botaoProximaPagina.click();
-						Locator infoNaoHaMaisVagas = page.locator("[class='t-24 t-black t-normal text-align-center']");
-						if (Objects.nonNull(infoNaoHaMaisVagas) && infoNaoHaMaisVagas.textContent()
-								.contains("Nenhuma vaga corresponde aos seus critérios")) {
-							irParaProximaLinguagem = true;
-						}
+				for (int i = 0; i <= qtdPaginasDisponiveis; i++) {
+					if (i > 0) {
+						clicarBotaoProximaPagina(page);
+						ScrappingUtil.aguardarEmSegundos(2);
 					}
-					if (irParaProximaLinguagem) {
-						continue;
-					}
+					clicarPrimeiraVagaERolarPaginaParaFinal(page);
 
-					ScrappingUtil.rolarParaFinalPagina(page);
 					List<ElementHandle> vagas = paginaVagasLinkedin.querySelectorAll("[data-job-id]");
 
 					for (ElementHandle vaga : vagas) {
@@ -102,6 +96,14 @@ public class LinkedinService {
 
 							contador++;
 							System.out.println("Capturadas " + contador + " vagas");
+							/*
+							 * if (contador == vagas.size() - 1) {
+							 * System.err.println("Próxima página, capturados " + vagas.size() + " itens ");
+							 * ScrappingUtil.aguardarEmSegundos(5);
+							 * clicarPrimeiraVagaERolarPaginaParaFinal(page); vagas =
+							 * paginaVagasLinkedin.querySelectorAll("[data-job-id]"); contador = 0; }
+							 */
+
 						} catch (Exception e) {
 
 							System.err.println("Erro ao processar vaga: " + e.getMessage());
@@ -109,6 +111,49 @@ public class LinkedinService {
 					}
 				}
 			}
+		}
+
+	}
+
+	private void clicarBotaoProximaPagina(Page page) {
+		Locator botaoProximaPagina = page.locator("[aria-label='Ver próxima página']");
+		botaoProximaPagina.click();
+	}
+
+	private int obterQuantidadePaginasDisponiveis(Page page) {
+
+		int qtdPaginas = 0;
+
+		boolean temProximaPagina = true;
+		while (temProximaPagina) {
+			Locator botaoProximaPagina = page.locator("[aria-label='Ver próxima página']");
+			if (botaoProximaPagina.count() > 0) {
+				botaoProximaPagina.click();
+				qtdPaginas++;
+				temProximaPagina = true;
+			} else {
+				temProximaPagina = false;
+			}
+		}
+
+		return qtdPaginas;
+
+	}
+
+	private void clicarPrimeiraPagina(Page page) {
+		Locator primeiraPagina = page.locator("[class='jobs-search-pagination__indicator-button']");
+
+		if (primeiraPagina.count() > 0) {
+			primeiraPagina.nth(0).click();
+		}
+	}
+
+	private void clicarPrimeiraVagaERolarPaginaParaFinal(Page page) {
+		ElementHandle primeiraVaga = page.waitForSelector("[data-job-id]");
+
+		if (primeiraVaga.isVisible()) {
+			primeiraVaga.click();
+			ScrappingUtil.rolarParaFinalPagina(page);
 		}
 	}
 
