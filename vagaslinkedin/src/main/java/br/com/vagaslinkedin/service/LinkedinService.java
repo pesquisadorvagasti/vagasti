@@ -142,9 +142,9 @@ public class LinkedinService {
 	}
 
 	private void clicarPrimeiraPagina(Page page) {
-		Locator primeiraPagina = page.locator("[class='jobs-search-pagination__indicator-button']");
+		Locator primeiraPagina = page.locator("[class='jobs-search-pagination__indicator-button']").nth(0);
 
-		if (primeiraPagina.count() > 0) {
+		if (primeiraPagina.isVisible() ) {
 			primeiraPagina.nth(0).click();
 		}
 	}
