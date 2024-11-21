@@ -2,9 +2,11 @@ package br.com.cadastrovagas.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import br.com.cadastrovagas.domain.dto.VagaRequestDto;
@@ -39,5 +41,23 @@ public class VagaController {
 		
 		vagaService.cadastrar(vagaRequestDto);
 		return ResponseEntity.ok("Vaga cadastrada com sucesso!");
+	}
+	
+	@PatchMapping
+	@Operation(summary = "Excluir uma nova vaga", description = "Recebe o id da vaga e exclui da base de dados.")
+	@ApiResponses(value = {
+			@ApiResponse(responseCode = "204", description = "Vaga cadastrada com sucesso", content = {
+					@Content(mediaType = "application/json", schema = @Schema(implementation = String.class)) }),
+			@ApiResponse(responseCode = "400", description = "Erro de validação nos dados fornecidos", content = @Content),
+			@ApiResponse(responseCode = "500", description = "Erro interno no servidor", content = @Content) })
+
+	public ResponseEntity<String> excluir(
+			@ io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Objeto contendo os dados da vaga a ser cadastrada", 
+			required = true, content = @Content(mediaType = "application/json",
+			schema = @Schema(implementation = Long.class))) 
+			@Valid @RequestParam Long idVaga) {
+		
+		vagaService.excluirPorId(idVaga);
+		return ResponseEntity.ok("Vaga excluída com sucesso!");
 	}
 }

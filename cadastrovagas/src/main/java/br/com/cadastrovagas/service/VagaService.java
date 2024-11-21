@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import br.com.cadastrovagas.domain.dto.VagaRequestDto;
 import br.com.cadastrovagas.domain.entity.VagaEntity;
 import br.com.cadastrovagas.domain.mapper.VagaMapper;
+import br.com.cadastrovagas.exception.RegistroNaoExcluidoException;
 import br.com.cadastrovagas.exception.VagaNaoCadastradaException;
 import br.com.cadastrovagas.repository.VagaRepository;
 
@@ -16,6 +17,7 @@ import br.com.cadastrovagas.repository.VagaRepository;
 public class VagaService {
 
 	private static final String ERRO_CADASTRAR_VAGA = "Erro ao cadastrar a vaga de id ";
+	private static final String ERRO_EXCLUIR_VAGA = "Erro ao excluir a vaga!";
 	@Autowired
 	private VagaRepository vagaRepository;
 
@@ -36,6 +38,17 @@ public class VagaService {
 
 		} catch (VagaNaoCadastradaException e) {
 			throw new VagaNaoCadastradaException(ERRO_CADASTRAR_VAGA + vagaRequestDto.idVaga() + " " + e);
+		}
+	}
+
+	@Transactional
+	public void excluirPorId(Long idVaga) {
+
+		try {
+			vagaRepository.deleteByIdVaga(idVaga);
+
+		} catch (RegistroNaoExcluidoException e) {
+			throw new RegistroNaoExcluidoException(ERRO_EXCLUIR_VAGA + e);
 		}
 	}
 }

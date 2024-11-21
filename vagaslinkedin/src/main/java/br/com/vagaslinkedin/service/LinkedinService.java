@@ -115,6 +115,13 @@ public class LinkedinService {
 
 	}
 
+	private boolean naoAceitaMaisCandidaturas(Page page) {
+
+		Locator elementoNaoAceitaMaisCandidaturas = page.locator("[class='artdeco-inline-feedback__message']");
+		return elementoNaoAceitaMaisCandidaturas.count() > 0;
+
+	}
+
 	private void clicarBotaoProximaPagina(Page page) {
 		Locator botaoProximaPagina = page.locator("[aria-label='Ver próxima página']");
 		if (botaoProximaPagina.isVisible())
@@ -128,7 +135,7 @@ public class LinkedinService {
 		boolean temProximaPagina = true;
 		while (temProximaPagina) {
 			Locator botaoProximaPagina = page.locator("[aria-label='Ver próxima página']");
-			if (botaoProximaPagina.isVisible()) {
+			if (botaoProximaPagina.count() > 0 && botaoProximaPagina.isVisible()) {
 				botaoProximaPagina.click();
 				qtdPaginas++;
 				temProximaPagina = true;
@@ -144,7 +151,7 @@ public class LinkedinService {
 	private void clicarPrimeiraPagina(Page page) {
 		Locator primeiraPagina = page.locator("[class='jobs-search-pagination__indicator-button']").nth(0);
 
-		if (primeiraPagina.isVisible() ) {
+		if (primeiraPagina.isVisible()) {
 			primeiraPagina.nth(0).click();
 		}
 	}
@@ -188,6 +195,12 @@ public class LinkedinService {
 			return Optional.empty();
 
 		vaga.click();
+
+		if (naoAceitaMaisCandidaturas(page)) {
+			Long idVaga = Long.valueOf(obterIdVaga(page.url()));
+			cadastroVagaService.excluirVaga(idVaga);
+			return Optional.empty();
+		}
 
 		page.waitForSelector("#job-details");
 

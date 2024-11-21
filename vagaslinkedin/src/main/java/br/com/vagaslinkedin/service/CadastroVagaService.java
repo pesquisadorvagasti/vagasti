@@ -19,4 +19,10 @@ public class CadastroVagaService {
 				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE).body(vagaRequestDto).retrieve()
 				.body(String.class);
 	}
+
+	public String excluirVaga(Long idVaga) {
+		return restClient.post().uri("http://localhost:8082/vagas")
+				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE).body(idVaga).retrieve()
+				.body(String.class);
+	}
 }

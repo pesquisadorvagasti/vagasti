@@ -8,4 +8,6 @@ public interface VagaRepository extends JpaRepository<VagaEntity, Long> {
 
 	boolean existsByIdVaga(Long idVaga);
 
+	void deleteByIdVaga(Long idVaga);
+
 }
