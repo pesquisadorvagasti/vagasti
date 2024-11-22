@@ -65,7 +65,9 @@ public class LinkedinService {
 
 		for (ModalidadeTrabalho modalidadeTrabalho : modalidadesTrabalho) {
 			for (LinguagemProgramacao linguagemProgramacao : listaLinguagensProgramacao) {
-
+				if (naoTemMaisVagas(page)) {
+					continue;
+				}
 				String urlPaginaVagasLinkedin = obterUrlPaginaVagasLinkedin(linguagemProgramacao.descricaoPesquisa,
 						modalidadeTrabalho.codigo);
 				Page paginaVagasLinkedin = abrirPaginaVagasLinkedinComParametros(page, urlPaginaVagasLinkedin);
@@ -80,7 +82,13 @@ public class LinkedinService {
 						clicarBotaoProximaPagina(page);
 						ScrappingUtil.aguardarEmSegundos(2);
 					}
-					clicarPrimeiraVagaERolarPaginaParaFinal(page);
+					boolean temPrimeiraVaga = clicarPrimeiraVaga(page);
+
+					if (!temPrimeiraVaga) {
+						break;
+					}
+
+					ScrappingUtil.rolarParaFinalPagina(page);
 
 					List<ElementHandle> vagas = paginaVagasLinkedin.querySelectorAll("[data-job-id]");
 
@@ -115,11 +123,12 @@ public class LinkedinService {
 
 	}
 
-	private boolean naoAceitaMaisCandidaturas(Page page) {
-
-		Locator elementoNaoAceitaMaisCandidaturas = page.locator("[class='artdeco-inline-feedback__message']");
-		return elementoNaoAceitaMaisCandidaturas.count() > 0;
-
+	private boolean naoTemMaisVagas(Page page) {
+		Locator naoTemMaisVagas = page.locator("[class='t-24 t-black t-normal text-align-center']");
+		boolean naoTem = naoTemMaisVagas.count() > 0;
+		if (naoTem)
+			System.out.println("Não tem mais vagas disponíveis, indo para a próxima");
+		return naoTem;
 	}
 
 	private void clicarBotaoProximaPagina(Page page) {
@@ -157,12 +166,17 @@ public class LinkedinService {
 		}
 	}
 
-	private void clicarPrimeiraVagaERolarPaginaParaFinal(Page page) {
-		ElementHandle primeiraVaga = page.waitForSelector("[data-job-id]");
+	private boolean clicarPrimeiraVaga(Page page) {
+		try {
+			ElementHandle primeiraVaga = page.waitForSelector("[data-job-id]");
 
-		if (primeiraVaga.isVisible()) {
-			primeiraVaga.click();
-			ScrappingUtil.rolarParaFinalPagina(page);
+			if (Objects.nonNull(primeiraVaga) && primeiraVaga.isVisible()) {
+				primeiraVaga.click();
+				return true;
+			}
+			return false;
+		} catch (Exception e) {
+			return false;
 		}
 	}
 
@@ -193,12 +207,6 @@ public class LinkedinService {
 			String linguagemProgramacao, String modalidadeTrabalho) {
 
 		if (Objects.isNull(vaga)) {
-			return Optional.empty();
-		}
-
-		if (naoAceitaMaisCandidaturas(page)) {
-			Long idVaga = Long.valueOf(obterIdVaga(page.url()));
-			cadastroVagaService.excluirVaga(idVaga);
 			return Optional.empty();
 		}
 

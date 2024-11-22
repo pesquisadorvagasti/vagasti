@@ -9,7 +9,6 @@ import org.springframework.transaction.annotation.Transactional;
 import br.com.cadastrovagas.domain.dto.VagaRequestDto;
 import br.com.cadastrovagas.domain.entity.VagaEntity;
 import br.com.cadastrovagas.domain.mapper.VagaMapper;
-import br.com.cadastrovagas.exception.RegistroNaoExcluidoException;
 import br.com.cadastrovagas.exception.VagaNaoCadastradaException;
 import br.com.cadastrovagas.repository.VagaRepository;
 
@@ -41,14 +40,4 @@ public class VagaService {
 		}
 	}
 
-	@Transactional
-	public void excluirPorId(Long idVaga) {
-
-		try {
-			vagaRepository.deleteByIdVaga(idVaga);
-
-		} catch (RegistroNaoExcluidoException e) {
-			throw new RegistroNaoExcluidoException(ERRO_EXCLUIR_VAGA + e);
-		}
-	}
 }
