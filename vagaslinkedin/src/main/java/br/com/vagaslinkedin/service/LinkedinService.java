@@ -234,11 +234,9 @@ public class LinkedinService {
 
 		Locator elementoEmpresa = page.locator("[class='job-details-jobs-unified-top-card__company-name']");
 
-		if (elementoEmpresa.count() > 0) {
-			empresa = elementoEmpresa.textContent().replace("\n                  ", "").replace("\n", "");
-		} else {
-			return Optional.empty();
-		}
+		empresa = elementoEmpresa.count() > 0
+				? elementoEmpresa.textContent().replace("\n                  ", "").replace("\n", "")
+				: null;
 
 		empresa = elementoEmpresa.textContent().replace("\n                  ", "").replace("\n", "");
 
