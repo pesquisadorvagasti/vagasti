@@ -1,5 +1,7 @@
 package br.com.cadastrovagas.service;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,6 +40,30 @@ public class VagaService {
 		} catch (VagaNaoCadastradaException e) {
 			throw new VagaNaoCadastradaException(ERRO_CADASTRAR_VAGA + vagaRequestDto.idVaga() + " " + e);
 		}
+	}
+
+	public void expurgarVagas(List<Long> idsVagasCadastradas) {
+
+		List<Long> idsVagasASeremExpurgados = obterVagasNaoMaisExistentes(idsVagasCadastradas);
+
+		if (!idsVagasCadastradas.isEmpty()) {
+			vagaRepository.deleteAllByIdVagaIn(idsVagasASeremExpurgados);
+		}
+
+	}
+
+	private List<Long> obterVagasNaoMaisExistentes(List<Long> idsVagasCadastradas) {
+
+		List<Long> idsVagasExistentes = vagaRepository.findAll().stream().map(VagaEntity::getIdVaga).toList();
+
+		if (idsVagasExistentes.isEmpty())
+			return Collections.emptyList();
+
+		List<Long> idsVagasASeremExpurgados = idsVagasExistentes.stream()
+				.filter(idVagaExistente -> idsVagasCadastradas.contains(idVagaExistente)).toList();
+
+		return idsVagasASeremExpurgados;
+
 	}
 
 }
