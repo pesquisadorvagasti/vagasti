@@ -69,15 +69,24 @@ public class LinkedinService {
 					boolean procurarProximaLinguagem = false;
 
 					if (naoTemMaisVagas(page)) {
+						page.navigate(obterUrlPaginaVagasLinkedin());
 						continue;
 					}
+
 					String urlPaginaVagasLinkedin = obterUrlPaginaVagasLinkedin(linguagemProgramacao.descricaoPesquisa,
 							modalidadeTrabalho.codigo);
+
 					Page paginaVagasLinkedin = abrirPaginaVagasLinkedinComParametros(page, urlPaginaVagasLinkedin);
 					ScrappingUtil.aguardarEmSegundos(2);
 
 					int qtdPaginasDisponiveis = obterQuantidadePaginasDisponiveis(page);
-					clicarPrimeiraPagina(page);
+
+					boolean foiPossivelClicarPrimeiraPagina = clicarPrimeiraPagina(page);
+
+					if (!foiPossivelClicarPrimeiraPagina) {
+						abrirPaginaVagasLinkedinComParametros(page, urlPaginaVagasLinkedin);
+					}
+
 					int contador = 0;
 
 					for (int i = 0; i <= qtdPaginasDisponiveis; i++) {
@@ -96,7 +105,6 @@ public class LinkedinService {
 
 						Locator vagas = paginaVagasLinkedin.locator("[data-job-id]");
 
-						// Iterar sobre os elementos encontrados
 						for (int indice = 0; indice < vagas.count(); indice++) {
 							try {
 
@@ -108,13 +116,6 @@ public class LinkedinService {
 
 								contador++;
 								System.out.println("Capturadas " + contador + " vagas");
-								/*
-								 * if (contador == vagas.size() - 1) {
-								 * System.err.println("Próxima página, capturados " + vagas.size() + " itens ");
-								 * ScrappingUtil.aguardarEmSegundos(5);
-								 * clicarPrimeiraVagaERolarPaginaParaFinal(page); vagas =
-								 * paginaVagasLinkedin.querySelectorAll("[data-job-id]"); contador = 0; }
-								 */
 
 							} catch (Exception e) {
 
@@ -165,12 +166,20 @@ public class LinkedinService {
 
 	}
 
-	private void clicarPrimeiraPagina(Page page) {
-		Locator primeiraPagina = page.locator("[class='jobs-search-pagination__indicator-button']").nth(0);
+	private boolean clicarPrimeiraPagina(Page page) {
 
-		if (primeiraPagina.count() > 0 && primeiraPagina.isVisible()) {
-			primeiraPagina.nth(0).click();
+		try {
+			Locator primeiraPagina = page.locator("[class='jobs-search-pagination__indicator-button']").nth(0);
+
+			if (primeiraPagina.count() > 0 && primeiraPagina.isVisible()) {
+				primeiraPagina.nth(0).click();
+				return true;
+			}
+		} catch (Exception e) {
+			System.out.println("Não foi possível clicar na primeira página, vamos redirecionar");
 		}
+		return false;
+
 	}
 
 	private boolean clicarPrimeiraVaga(Page page) {
@@ -329,5 +338,9 @@ public class LinkedinService {
 		return "https://www.linkedin.com/jobs/search/?f_TPR=r86400&f_WT=" + codigoModalidadeTrabalho
 				+ "&geoId=106057199&keywords=" + linguagemProgramacao
 				+ "&origin=JOB_SEARCH_PAGE_KEYWORD_AUTOCOMPLETE&refresh=true";
+	}
+
+	private String obterUrlPaginaVagasLinkedin() {
+		return "https://www.linkedin.com/jobs";
 	}
 }
