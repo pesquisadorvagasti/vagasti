@@ -1,5 +1,6 @@
 package br.com.vagaslinkedin.service;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -10,6 +11,7 @@ import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import com.microsoft.playwright.ElementHandle;
 import com.microsoft.playwright.Locator;
@@ -17,13 +19,14 @@ import com.microsoft.playwright.Page;
 
 import br.com.vagaslinkedin.domain.model.dto.InformacaoInicialVagaDto;
 import br.com.vagaslinkedin.domain.model.dto.VagaRequestDto;
-import br.com.vagaslinkedin.domain.model.enumerator.LinguagensProgramacaoEnum;
+import br.com.vagaslinkedin.domain.model.enumerator.CategoriaTI;
 import br.com.vagaslinkedin.domain.model.enumerator.ModalidadeTrabalhoEnum;
 import br.com.vagaslinkedin.util.ScrappingUtil;
 
 @Service
 public class LinkedinService {
-	record LinguagemProgramacao(Integer codigo, String descricao, String descricaoPesquisa, Integer ordem) {
+
+	record CargosOuTecnologias(String descricao, String descricaoPesquisa, Integer ordem) {
 	};
 
 	record ModalidadeTrabalho(Integer codigo, String descricaoModalidadeTrabalho, Integer ordem) {
@@ -31,6 +34,13 @@ public class LinkedinService {
 
 	record PaginaDisponivel(boolean foiPossivelVerificarPaginasDisponiveis, int quantidadePaginas) {
 	};
+
+	List<String> listaLinguagensProgramacao = new ArrayList<>();
+
+	public LinkedinService() {
+		this.listaLinguagensProgramacao = obterCargosOuLinguagens().stream()
+				.map(CargosOuTecnologias::descricao).toList();
+	}
 
 	@Autowired
 	private CadastroVagaService cadastroVagaService;
@@ -62,13 +72,13 @@ public class LinkedinService {
 
 	public void visualizarVagasLinkedin(Page page) {
 
-		List<LinguagemProgramacao> listaLinguagensProgramacao = obterListaLinguagensProgramacao();
+		List<CargosOuTecnologias> listaCargosOuLinguagens = obterCargosOuLinguagens();
 
 		List<ModalidadeTrabalho> modalidadesTrabalho = obterModalidadesTrabalho();
 		while (true) {
 			for (ModalidadeTrabalho modalidadeTrabalho : modalidadesTrabalho) {
-				for (LinguagemProgramacao linguagemProgramacao : listaLinguagensProgramacao) {
-					System.out.println("Processando vagas de " + linguagemProgramacao.descricao
+				for (CargosOuTecnologias cargoOuLinguagem : listaCargosOuLinguagens) {
+					System.out.println("Processando vagas de " + cargoOuLinguagem.descricao
 							+ " - Modalidade de trabalho: " + modalidadeTrabalho.descricaoModalidadeTrabalho);
 					boolean procurarProximaLinguagem = false;
 
@@ -77,7 +87,7 @@ public class LinkedinService {
 						continue;
 					}
 
-					String urlPaginaVagasLinkedin = obterUrlPaginaVagasLinkedin(linguagemProgramacao.descricaoPesquisa,
+					String urlPaginaVagasLinkedin = obterUrlPaginaVagasLinkedin(cargoOuLinguagem.descricaoPesquisa,
 							modalidadeTrabalho.codigo);
 
 					Page paginaVagasLinkedin = abrirPaginaVagasLinkedinComParametros(page, urlPaginaVagasLinkedin);
@@ -119,7 +129,7 @@ public class LinkedinService {
 							try {
 
 								Optional<VagaRequestDto> vagaRequestDto = obterInformacoesVagaAposClique(
-										paginaVagasLinkedin, vagas.nth(indice), linguagemProgramacao.descricao,
+										paginaVagasLinkedin, vagas.nth(indice), cargoOuLinguagem.descricao,
 										modalidadeTrabalho.descricaoModalidadeTrabalho);
 
 								vagaRequestDto.ifPresent(v -> cadastroVagaService.postarVaga(v));
@@ -211,17 +221,17 @@ public class LinkedinService {
 		}
 	}
 
-	private List<LinguagemProgramacao> obterListaLinguagensProgramacao() {
-		List<LinguagemProgramacao> linguagens = Stream.of(LinguagensProgramacaoEnum.values()).map(
-				l -> new LinguagemProgramacao(l.getCodigo(), l.getDescricao(), l.getDescricaoPesquisa(), l.getOrdem()))
+	private List<CargosOuTecnologias> obterCargosOuLinguagens() {
+		List<CargosOuTecnologias> linguagens = Stream.of(CategoriaTI.values())
+				.map(l -> new CargosOuTecnologias(l.getDescricao(), l.getDescricaoPesquisa(), l.ordinal()))
 				.collect(Collectors.toList());
-		Collections.sort(linguagens, Comparator.comparing(LinguagemProgramacao::ordem));
+		Collections.sort(linguagens, Comparator.comparing(CargosOuTecnologias::ordem));
 		return linguagens;
 	}
 
 	private List<ModalidadeTrabalho> obterModalidadesTrabalho() {
 		List<ModalidadeTrabalho> modalidades = Stream.of(ModalidadeTrabalhoEnum.values())
-				.map(m -> new ModalidadeTrabalho(m.getCodigo(), m.getDescricao(), m.getOrdem()))
+				.map(m -> new ModalidadeTrabalho(m.getCodigo(), m.getDescricao(), m.ordinal()))
 				.collect(Collectors.toList());
 		Collections.sort(modalidades, Comparator.comparing(ModalidadeTrabalho::ordem));
 		return modalidades;
@@ -273,12 +283,24 @@ public class LinkedinService {
 		boolean linguagemPrincipalExisteNaVaga = ScrappingUtil.palavraExisteNoTexto(linguagemProgramacao,
 				descricaoVaga);
 
+		String descricaoLinguagensVaga = null;
+
 		if (!linguagemPrincipalExisteNaVaga) {
-			LinguagemProgramacao linguagemVaga = obterListaLinguagensProgramacao().stream()
+			CargosOuTecnologias linguagemVaga = obterCargosOuLinguagens().stream()
 					.filter(linguagem -> ScrappingUtil.palavraExisteNoTexto(linguagem.descricao, descricaoVaga))
 					.findFirst().orElse(null);
 
 			linguagemProgramacao = linguagemVaga != null ? linguagemVaga.descricao : null;
+
+			descricaoLinguagensVaga = listaLinguagensProgramacao.stream()
+					.filter(linguagem -> ScrappingUtil.palavraExisteNoTexto(linguagem, descricaoVaga))
+					.collect(Collectors.joining(","));
+
+			if (descricaoLinguagensVaga.isEmpty()) {
+				descricaoLinguagensVaga = Objects.isNull(linguagemVaga) || !StringUtils.hasText(linguagemVaga.descricao)
+						? null
+						: linguagemVaga.descricao;
+			}
 		}
 
 		if (informacaoInicialVagaDto.isPresent()) {
@@ -290,8 +312,8 @@ public class LinkedinService {
 		}
 
 		return Optional.of(new VagaRequestDto(null, Long.valueOf(idVaga), localizacao, postadoEm,
-				quantidadeCandidaturas, 1, linkVaga, linguagemProgramacao, empresa, tituloVaga, descricaoVaga,
-				candidaturaSimplificada, modalidadeTrabalho));
+				quantidadeCandidaturas, 1, linkVaga, linguagemProgramacao, descricaoLinguagensVaga, empresa, tituloVaga,
+				descricaoVaga, candidaturaSimplificada, modalidadeTrabalho));
 	}
 
 	private Optional<InformacaoInicialVagaDto> obterInformacoesIniciasVaga(Page page) {

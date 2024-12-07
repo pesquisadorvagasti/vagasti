@@ -29,6 +29,8 @@ public class VagaEntity {
 	private String linkVaga;
 	@Column(name = "DS_LINGUAGEM")
 	private String linguagem;
+	@Column(name = "DS_LINGUAGENS_VAGA")
+	private String descricaoLinguagensVaga;
 	@Column(name = "DS_EMPRESA")
 	private String empresa;
 	@Column(name = "DS_TITULO_VAGA")
@@ -45,8 +47,8 @@ public class VagaEntity {
 	}
 
 	public VagaEntity(Long sqVaga, Long idVaga, String localidade, String postadaEm, Integer quantidadeCandidaturas,
-			SiteVagaEnum site, String linkVaga, String linguagem, String empresa, String tituloVaga, String descricao,
-			Boolean candidaturaSimplificada, String modalidadeTrabalho) {
+			SiteVagaEnum site, String linkVaga, String linguagem, String descricaoLinguagensVaga, String empresa,
+			String tituloVaga, String descricao, Boolean candidaturaSimplificada, String modalidadeTrabalho) {
 		super();
 		this.sqVaga = sqVaga;
 		this.idVaga = idVaga;
@@ -56,6 +58,7 @@ public class VagaEntity {
 		this.site = site;
 		this.linkVaga = linkVaga;
 		this.linguagem = linguagem;
+		this.descricaoLinguagensVaga = descricaoLinguagensVaga;
 		this.empresa = empresa;
 		this.tituloVaga = tituloVaga;
 		this.descricao = descricao;
@@ -73,6 +76,7 @@ public class VagaEntity {
 	}
 
 	public Long getIdVaga() {
+
 		return idVaga;
 	}
 
@@ -126,6 +130,14 @@ public class VagaEntity {
 
 	public void setLinguagem(String linguagem) {
 		this.linguagem = linguagem;
+	}
+
+	public String getDescricaoLinguagensVaga() {
+		return descricaoLinguagensVaga;
+	}
+
+	public void setDescricaoLinguagensVaga(String descricaoLinguagensVaga) {
+		this.descricaoLinguagensVaga = descricaoLinguagensVaga;
 	}
 
 	public String getLocalidade() {

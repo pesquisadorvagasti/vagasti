@@ -34,6 +34,7 @@ public class VagaService {
 					vagaRepository.save(vagaASerAtualizada);
 				}
 			} else {
+				//printStringFieldsWithSizes(vagaRequestDto);
 				vagaRepository.save(VagaMapper.convertToEntity(vagaRequestDto));
 			}
 
@@ -64,6 +65,31 @@ public class VagaService {
 
 		return idsVagasASeremExpurgados;
 
+	}
+
+	private static void printStringFieldsWithSizes(VagaRequestDto vagaRequestDto) {
+		System.out.println("Campos String e seus tamanhos:");
+
+		System.out.println("localidade - tamanho: "
+				+ (vagaRequestDto.localidade() != null ? vagaRequestDto.localidade().length() : "null"));
+		System.out.println("postadaEm - tamanho: "
+				+ (vagaRequestDto.postadaEm() != null ? vagaRequestDto.postadaEm().length() : "null"));
+		System.out.println("linkVaga - tamanho: "
+				+ (vagaRequestDto.linkVaga() != null ? vagaRequestDto.linkVaga().length() : "null"));
+		System.out.println("linguagem - tamanho: "
+				+ (vagaRequestDto.linguagem() != null ? vagaRequestDto.linguagem().length() : "null"));
+		System.out.println("descricaoLinguagensVaga - tamanho: "
+				+ (vagaRequestDto.descricaoLinguagensVaga() != null ? vagaRequestDto.descricaoLinguagensVaga().length()
+						: "null"));
+		System.out.println("empresa - tamanho: "
+				+ (vagaRequestDto.empresa() != null ? vagaRequestDto.empresa().length() : "null"));
+		System.out.println("tituloVaga - tamanho: "
+				+ (vagaRequestDto.tituloVaga() != null ? vagaRequestDto.tituloVaga().length() : "null"));
+		System.out.println("descricao - tamanho: "
+				+ (vagaRequestDto.descricao() != null ? vagaRequestDto.descricao().length() : "null"));
+		System.out.println("modalidadeTrabalho - tamanho: "
+				+ (vagaRequestDto.modalidadeTrabalho() != null ? vagaRequestDto.modalidadeTrabalho().length()
+						: "null"));
 	}
 
 }
