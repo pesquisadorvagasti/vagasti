@@ -29,6 +29,9 @@ public class LinkedinService {
 	record ModalidadeTrabalho(Integer codigo, String descricaoModalidadeTrabalho, Integer ordem) {
 	};
 
+	record PaginaDisponivel(boolean foiPossivelVerificarPaginasDisponiveis, int quantidadePaginas) {
+	};
+
 	@Autowired
 	private CadastroVagaService cadastroVagaService;
 
@@ -65,7 +68,8 @@ public class LinkedinService {
 		while (true) {
 			for (ModalidadeTrabalho modalidadeTrabalho : modalidadesTrabalho) {
 				for (LinguagemProgramacao linguagemProgramacao : listaLinguagensProgramacao) {
-
+					System.out.println("Processando vagas de " + linguagemProgramacao.descricao
+							+ " - Modalidade de trabalho: " + modalidadeTrabalho.descricaoModalidadeTrabalho);
 					boolean procurarProximaLinguagem = false;
 
 					if (naoTemMaisVagas(page)) {
@@ -78,8 +82,14 @@ public class LinkedinService {
 
 					Page paginaVagasLinkedin = abrirPaginaVagasLinkedinComParametros(page, urlPaginaVagasLinkedin);
 					ScrappingUtil.aguardarEmSegundos(2);
+					PaginaDisponivel paginaDisponivel = obterQuantidadePaginasDisponiveis(page);
 
-					int qtdPaginasDisponiveis = obterQuantidadePaginasDisponiveis(page);
+					if (!paginaDisponivel.foiPossivelVerificarPaginasDisponiveis) {
+						procurarProximaLinguagem = true;
+						break;
+					}
+
+					int qtdPaginasDisponiveis = paginaDisponivel.quantidadePaginas;
 
 					boolean foiPossivelClicarPrimeiraPagina = clicarPrimeiraPagina(page);
 
@@ -145,24 +155,29 @@ public class LinkedinService {
 			botaoProximaPagina.click();
 	}
 
-	private int obterQuantidadePaginasDisponiveis(Page page) {
+	private PaginaDisponivel obterQuantidadePaginasDisponiveis(Page page) {
 
-		int qtdPaginas = 0;
+		try {
+			int qtdPaginas = 0;
 
-		boolean temProximaPagina = true;
-		while (temProximaPagina) {
-			Locator botaoProximaPagina = page.locator("[aria-label='Ver próxima página']");
-			if (botaoProximaPagina.count() > 0 && botaoProximaPagina.isVisible()) {
-				botaoProximaPagina.click();
-				ScrappingUtil.aguardarEmSegundos(2);
-				qtdPaginas++;
-				temProximaPagina = true;
-			} else {
-				temProximaPagina = false;
+			boolean temProximaPagina = true;
+
+			while (temProximaPagina) {
+				Locator botaoProximaPagina = page.locator("[aria-label='Ver próxima página']");
+				if (botaoProximaPagina.count() > 0 && botaoProximaPagina.isVisible()) {
+					botaoProximaPagina.click();
+					ScrappingUtil.aguardarEmSegundos(2);
+					qtdPaginas++;
+					temProximaPagina = true;
+				} else {
+					temProximaPagina = false;
+				}
 			}
-		}
 
-		return qtdPaginas;
+			return new PaginaDisponivel(true, qtdPaginas);
+		} catch (Exception e) {
+			return new PaginaDisponivel(false, 0);
+		}
 
 	}
 
@@ -233,7 +248,7 @@ public class LinkedinService {
 		ScrappingUtil.aguardarEmSegundos(1);
 
 		String idVaga = obterIdVaga(page.url());
-		String linkVaga = "https://www.linkedin.com/jobs/search/?currentJobId=" + idVaga;
+		String linkVaga = "https://www.linkedin.com/jobs/view/" + idVaga;
 
 		String tituloVaga = vaga.locator("strong").textContent();
 
