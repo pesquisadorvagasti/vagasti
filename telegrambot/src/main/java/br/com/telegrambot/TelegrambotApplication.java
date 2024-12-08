@@ -1,13 +1,13 @@
-package br.com.bottelegram;
+package br.com.telegrambot;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class BottelegramApplication {
+public class TelegrambotApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(BottelegramApplication.class, args);
+		SpringApplication.run(TelegrambotApplication.class, args);
 	}
 
 }

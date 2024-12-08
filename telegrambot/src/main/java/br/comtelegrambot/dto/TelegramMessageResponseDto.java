@@ -1,4 +1,4 @@
-package br.com.bottelegram.dto;
+package br.comtelegrambot.dto;
 
 public class TelegramMessageResponseDto {
 	private boolean ok;

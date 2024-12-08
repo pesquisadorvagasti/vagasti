@@ -1,11 +1,11 @@
-package br.com.bottelegram.service;
+package br.com.telegrambot.service;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
-import br.com.bottelegram.dto.TelegramMessageRequestDto;
-import br.com.bottelegram.dto.TelegramMessageResponseDto;
+import br.comtelegrambot.dto.TelegramMessageRequestDto;
+import br.comtelegrambot.dto.TelegramMessageResponseDto;
 
 @Service
 public class TelegramService {

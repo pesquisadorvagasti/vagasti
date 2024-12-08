@@ -1,4 +1,4 @@
-package br.com.bottelegram.configuration;
+package br.com.telegrambot.configuration;
 
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
