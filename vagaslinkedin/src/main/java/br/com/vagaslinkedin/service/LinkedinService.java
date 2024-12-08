@@ -11,7 +11,6 @@ import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 
 import com.microsoft.playwright.ElementHandle;
 import com.microsoft.playwright.Locator;
@@ -26,7 +25,7 @@ import br.com.vagaslinkedin.util.ScrappingUtil;
 @Service
 public class LinkedinService {
 
-	record CargosOuTecnologias(String descricao, String descricaoPesquisa, Integer ordem) {
+	record CargosOuTecnologias(String descricao, String descricaoPesquisa, Integer ordem, boolean isCargo) {
 	};
 
 	record ModalidadeTrabalho(Integer codigo, String descricaoModalidadeTrabalho, Integer ordem) {
@@ -38,8 +37,8 @@ public class LinkedinService {
 	List<String> listaLinguagensProgramacao = new ArrayList<>();
 
 	public LinkedinService() {
-		this.listaLinguagensProgramacao = obterCargosOuLinguagens().stream()
-				.map(CargosOuTecnologias::descricao).toList();
+		this.listaLinguagensProgramacao = obterCargosOuLinguagens().stream().map(CargosOuTecnologias::descricao)
+				.toList();
 	}
 
 	@Autowired
@@ -130,7 +129,7 @@ public class LinkedinService {
 
 								Optional<VagaRequestDto> vagaRequestDto = obterInformacoesVagaAposClique(
 										paginaVagasLinkedin, vagas.nth(indice), cargoOuLinguagem.descricao,
-										modalidadeTrabalho.descricaoModalidadeTrabalho);
+										cargoOuLinguagem.isCargo, modalidadeTrabalho.descricaoModalidadeTrabalho);
 
 								vagaRequestDto.ifPresent(v -> cadastroVagaService.postarVaga(v));
 
@@ -222,8 +221,8 @@ public class LinkedinService {
 	}
 
 	private List<CargosOuTecnologias> obterCargosOuLinguagens() {
-		List<CargosOuTecnologias> linguagens = Stream.of(CategoriaTI.values())
-				.map(l -> new CargosOuTecnologias(l.getDescricao(), l.getDescricaoPesquisa(), l.ordinal()))
+		List<CargosOuTecnologias> linguagens = Stream.of(CategoriaTI.values()).map(
+				l -> new CargosOuTecnologias(l.getDescricao(), l.getDescricaoPesquisa(), l.ordinal(), l.getIsCargo()))
 				.collect(Collectors.toList());
 		Collections.sort(linguagens, Comparator.comparing(CargosOuTecnologias::ordem));
 		return linguagens;
@@ -244,8 +243,8 @@ public class LinkedinService {
 		return page;
 	}
 
-	private Optional<VagaRequestDto> obterInformacoesVagaAposClique(Page page, Locator vaga,
-			String linguagemProgramacao, String modalidadeTrabalho) {
+	private Optional<VagaRequestDto> obterInformacoesVagaAposClique(Page page, Locator vaga, String linguagemOuCargo,
+			boolean isCargo, String modalidadeTrabalho) {
 
 		if (vaga == null || vaga.locator("strong").count() == 0) {
 			return Optional.empty();
@@ -280,28 +279,7 @@ public class LinkedinService {
 		Integer quantidadeCandidaturas = null;
 		Boolean candidaturaSimplificada = Boolean.FALSE;
 
-		boolean linguagemPrincipalExisteNaVaga = ScrappingUtil.palavraExisteNoTexto(linguagemProgramacao,
-				descricaoVaga);
-
-		String descricaoLinguagensVaga = null;
-
-		if (!linguagemPrincipalExisteNaVaga) {
-			CargosOuTecnologias linguagemVaga = obterCargosOuLinguagens().stream()
-					.filter(linguagem -> ScrappingUtil.palavraExisteNoTexto(linguagem.descricao, descricaoVaga))
-					.findFirst().orElse(null);
-
-			linguagemProgramacao = linguagemVaga != null ? linguagemVaga.descricao : null;
-
-			descricaoLinguagensVaga = listaLinguagensProgramacao.stream()
-					.filter(linguagem -> ScrappingUtil.palavraExisteNoTexto(linguagem, descricaoVaga))
-					.collect(Collectors.joining(","));
-
-			if (descricaoLinguagensVaga.isEmpty()) {
-				descricaoLinguagensVaga = Objects.isNull(linguagemVaga) || !StringUtils.hasText(linguagemVaga.descricao)
-						? null
-						: linguagemVaga.descricao;
-			}
-		}
+		String descricaoLinguagensVaga = obterDescricaoLinguagensVaga(isCargo, tituloVaga, descricaoVaga);
 
 		if (informacaoInicialVagaDto.isPresent()) {
 			InformacaoInicialVagaDto dto = informacaoInicialVagaDto.get();
@@ -312,8 +290,26 @@ public class LinkedinService {
 		}
 
 		return Optional.of(new VagaRequestDto(null, Long.valueOf(idVaga), localizacao, postadoEm,
-				quantidadeCandidaturas, 1, linkVaga, linguagemProgramacao, descricaoLinguagensVaga, empresa, tituloVaga,
+				quantidadeCandidaturas, 1, linkVaga, linguagemOuCargo, descricaoLinguagensVaga, empresa, tituloVaga,
 				descricaoVaga, candidaturaSimplificada, modalidadeTrabalho));
+	}
+
+	private String obterDescricaoLinguagensVaga(boolean isCargo, String tituloVaga, String descricaoVaga) {
+		String descricaoLinguagensVaga = null;
+
+		if (isCargo) {
+			return tituloVaga;
+		}
+
+		descricaoLinguagensVaga = listaLinguagensProgramacao.stream()
+				.filter(linguagem -> ScrappingUtil.palavraExisteNoTexto(linguagem, descricaoVaga))
+				.collect(Collectors.joining(","));
+
+		if (!descricaoLinguagensVaga.isEmpty()) {
+			return tituloVaga;
+		}
+		return tituloVaga;
+
 	}
 
 	private Optional<InformacaoInicialVagaDto> obterInformacoesIniciasVaga(Page page) {
