@@ -1,0 +1,6 @@
+server:
+   port: 8083
+telegram:
+  bot:
+    token: "7839756833:AAHOx2rPB5iqLiuXFIsLj4hAKphBE9xauTs"
+    username: "vagafacil_bot"
